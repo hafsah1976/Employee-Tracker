@@ -2,9 +2,6 @@
 
 To keep track of Employees information.
 
-
-
-
 ## License
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org)
