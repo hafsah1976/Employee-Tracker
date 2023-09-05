@@ -43,7 +43,7 @@ VALUES
     (09, 'Malia', 'Brown', 5, 3),
     (10, 'Sarah', 'Lourd', 5, NULL),
     (11, 'Tom', 'Allen', 6, 4),
-    (12, 'Mila', 'Cruise', 5, 4),
+    (12, 'Mila', 'Cruise', 6, 4),
     (13, 'Nina', 'Adams', 7, NULL),
     (14, 'Peter', 'Parker', 7, 5),
     (15, 'Michael', 'Scott', 8, 5),
@@ -64,10 +64,3 @@ VALUES
     (30, 'Damien Wayne', 15, 2),
     (31, 'Margo Stark', 16, 3),
     (32, 'Cara Johnson', 16, 4);
-
-    
-
-
-
-
-
