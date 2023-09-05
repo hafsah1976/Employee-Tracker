@@ -10,7 +10,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 //connection to our db
-const pool = mysql.createConnection({
+const connectDB = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: '',
@@ -95,7 +95,7 @@ function admin() {
                     break;
                 case "8. Delete an Employee":
                     //  adding an employee
-                    deleteEmployee();
+                    deleteEmployees();
                     break;
                 case "9. Update Employee Role":
                     // updating employee role
@@ -183,11 +183,11 @@ function viewEmployeesByDepartment() {
       
         console.table(res);
         console.log("You just viewed Employees by department.\n");
-        // calls the departmentPrompts function, which prompts the user to choose a department to view employees for.
-        callDepartmentPrompts(departments);
+        // calls the department Prompts function, which prompts the user to choose a department
+        departmentPrompts(departments);
     });
 }
-        function callDepartmentPrompts(departments) {
+        function departmentPrompts(departments) {
             // prompts the user to choose a department 
             inquirer
             .prompt([
@@ -205,7 +205,7 @@ function viewEmployeesByDepartment() {
                 `SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department 
           FROM employee e
           JOIN role r
-            ON e.role_id = r.id
+          ON e.role_id = r.id
           JOIN department d
           ON d.id = r.department_id
           WHERE d.id = ?`
@@ -222,7 +222,86 @@ function viewEmployeesByDepartment() {
         }
           
 
+function addEmployee(){
+    console.log("Please follow the prompts to insert employee information");
+    var query=
+    `SELECT r.id, r.title, r.salary
+    FROM role r`
+    connectDB.query(query, function(error, res){
+        if(error) throw error;
+        const Roles=res.map(({id, title, salary})=>({
+            value:id, title: `${title}`, salary:`${salary}` 
+        }));
+        console.table(res);
+        console.log("Please follow the prompts to insert roles.");
+         insertRolesPrompt(Roles);
+    });
+}
 
+function insertRolesPrompt(Roles){
+    inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "first_name",
+        message: "Please enter employee's first name: "
+      },
+      {
+        type: "input",
+        name: "last_name",
+        message: "Please enter employee's last name: "
+      },
+      {
+        type: "list",
+        name: "role",
+        message: "Please enter employee's role: ",
+        choices: Roles
+      },
+    ])
+    .then(function (answer) {
+      console.log(answer);
+
+      var query = `INSERT INTO employee SET ?`
+      // when done entering employee information, insert something new into the database with that information
+      connectDB.query(query,
+        {
+          first_name: answer.first_name,
+          last_name: answer.last_name,
+          role_id: answer.role,
+          manager_id: answer.manager_Id,
+        },
+        function (error, res) {
+          if (error) throw error;
+
+          console.table(res);
+          console.log(res.insertedRows + "You have successfully inserted data!\n");
+
+          admin();
+        });
+    });
+}
+
+
+function deleteEmployees() {
+    console.log("You are now viewing information to delete an employee");
+  
+    var query =
+      `SELECT e.id, e.first_name, e.last_name
+        FROM employee e`
+  
+    connectDB.query(query, function (error, res) {
+      if (error) throw error;
+  //creating employees array to selecct and delete an employee
+      const employeesList = res.map(({ id, first_name, last_name }) => ({
+        value: id, name: `${id} ${first_name} ${last_name}`
+      }));
+  
+      console.table(res);
+      console.log("Please follow the prompts to delete an Employee(s)!\n");
+  
+      promptDelete(employeesList);
+    });
+  }
 
 
 admin();
