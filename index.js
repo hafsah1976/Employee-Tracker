@@ -1,98 +1,84 @@
 // Importing the required modules and setting up the SQL database connection
-const mysql = require("mysql2/promise");
-// const express = require("express");
-// const app = express();
-// const PORT = process.env.PORT || 3001;
 const inquirer = require("inquirer");
-const { table } = require('table'); // Import console.table
-//Express middleware
-// app.use(express.urlencoded({ extended: false }));
-// app.use(express.json());
+const { table } = require("table"); // Import console.table
+const mysql = require("mysql2");
 
-//connection to our db
 const connection = mysql.createConnection(
   {
     host: "localhost",
+    // port: 3001,
     user: "root",
     password: "S@@dkh@n",
     database: "employees_db",
   },
-  console.log(`Successfully connected to the Employees Database.`)
+  // console.log("Successfully Connected to the Employees Database.")
 );
-
-
-connection.createConnection(function(error){
+connection.connect(function(error){
   if (error) throw error;
-  console.log(`Connected as ID ${connection.threadId}`);
-  console.log(`
-    ███████╗███╗   ███╗██████╗ ██╗      ██████╗ ██╗   ██╗███████╗███████╗    ███╗   ███╗ █████╗ ███╗   ██╗ █████╗  ██████╗ ███████╗██████╗ 
-    ██╔════╝████╗ ████║██╔══██╗██║     ██╔═══██╗╚██╗ ██╔╝██╔════╝██╔════╝    ████╗ ████║██╔══██╗████╗  ██║██╔══██╗██╔════╝ ██╔════╝██╔══██╗
-    █████╗  ██╔████╔██║██████╔╝██║     ██║   ██║ ╚████╔╝ █████╗  █████╗      ██╔████╔██║███████║██╔██╗ ██║███████║██║  ███╗█████╗  ██████╔╝
-    ██╔══╝  ██║╚██╔╝██║██╔═══╝ ██║     ██║   ██║  ╚██╔╝  ██╔══╝  ██╔══╝      ██║╚██╔╝██║██╔══██║██║╚██╗██║██╔══██║██║   ██║██╔══╝  ██╔══██╗
-    ███████╗██║ ╚═╝ ██║██║     ███████╗╚██████╔╝   ██║   ███████╗███████╗    ██║ ╚═╝ ██║██║  ██║██║ ╚████║██║  ██║╚██████╔╝███████╗██║  ██║
-    ╚══════╝╚═╝     ╚═╝╚═╝     ╚══════╝ ╚═════╝    ╚═╝   ╚══════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝
-   `);
-  // Run the main application //this will be the first prompt
-  admin();
 });
-
 // Defining the function that initiates the app
+console.log(`
+
+░█▀▀▀ ░█▀▄▀█ ░█▀▀█ ░█─── ░█▀▀▀█ ░█──░█ ░█▀▀▀ ░█▀▀▀ 　 ░█▀▄▀█ ─█▀▀█ ░█▄─░█ ─█▀▀█ ░█▀▀█ ░█▀▀▀ ░█▀▀█ 
+░█▀▀▀ ░█░█░█ ░█▄▄█ ░█─── ░█──░█ ░█▄▄▄█ ░█▀▀▀ ░█▀▀▀ 　 ░█░█░█ ░█▄▄█ ░█░█░█ ░█▄▄█ ░█─▄▄ ░█▀▀▀ ░█▄▄▀ 
+░█▄▄▄ ░█──░█ ░█─── ░█▄▄█ ░█▄▄▄█ ──░█── ░█▄▄▄ ░█▄▄▄ 　 ░█──░█ ░█─░█ ░█──▀█ ░█─░█ ░█▄▄█ ░█▄▄▄ ░█─░█  `);
+
 
 function admin() {
   inquirer
-    .createPromptModule([
+    .prompt([
       {
         type: "list",
         name: "taskChoice",
         message: "What would you like to do?",
         choices: [
-          "1. View Employees by Department",
-          "2. View Employees By Manager",
-          "3. Add Employee",
-          "4. Delete Employee",
-          "5. Update Employee Role",
-          "6. Add Employee Role",
-          "7. View Employee Count",
-          "8. View Budget",
-          "9. Exit.",
+          "View Employees By Department",
+          "View Employees By Manager",
+          "Add Employee",
+          "Delete Employee",
+          "Update Employee Role",
+          "Add Employee Role",
+          "View Employee Count",
+          "View Department Budgets",
+          "Exit",
         ],
       },
     ])
-    .then((answers) => {
+    .then((answers => {
       switch (answers.taskChoice) {
-        case "1. View Employees by Department":
+        case "View Employees By Department":
           //  viewing all employees grouped by department
           viewEmployeesByDepartment();
           break;
-        case "2. View Employees By Manager":
+        case "View Employees By Manager":
           //  view employees grouped by manager
           viewEmployeesByManager();
           break;
-        case "3. Add Employee":
+        case "Add Employee":
           // add an employee
           addEmployee();
           break;
-        case "4. Delete Employee":
+        case "Delete Employee":
           //  delete an employee
           deleteEmployees();
           break;
-        case "5. Update Employee Role":
+        case "Update Employee Role":
           // update an existing employee's role
           updateEmployeeRole();
           break;
-        case "6. Add Employee Role":
+        case "Add Employee Role":
           //  add a new role for potential employees
           addEmployeeRole();
           break;
-        case "7. View Employee Count":
+        case "View Employee Count":
           //  view the exisiting number of employees
           viewEmployeesCount();
           break;
-        case "8. View Department Budgets":
+        case "View Department Budgets":
           //  View the total utilized budget of a department—in other words, the combined salaries of all employees in that department.
           viewDepartmentBudgets();
           break;
-        case "9. Exit.":
+        case "Exit":
           // Exit the program
           console.log("Thank you for using Employee Managing System.");
           connection.end();
@@ -100,10 +86,10 @@ function admin() {
         default:
           //  invalid input
           console.log("Invalid Input. Please Choose a task from the list.");
-          inquirer.createPromptModule();
           break;
       }
-    });
+    })
+    );
 }
 
 //this function is used to view all the employees under a particular manager.
@@ -112,12 +98,12 @@ function viewEmployeesByManager() {
   console.log("You are viewing Employees By Manager\n");
 
   //creates a query string that is used to select all the relevant information about the employees and their managers from the database.
-  var query = `SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department, r.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager
-FROM employee e
-LEFT JOIN role r
-ON e.role_id = r.id
-LEFT JOIN department d ON d.id = r.department_id
-LEFT JOIN employee m ON m.id = e.manager_id`;
+  var query = `SELECT e.id, e.first_name, e.last_name, r.title, d.department_name AS department, r.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager_name
+  FROM employee AS e
+  LEFT JOIN role AS r ON e.role_id = r.id
+  LEFT JOIN department AS d ON r.department_id = d.id
+  LEFT JOIN employee AS manager ON e.manager_id = manager.id
+  `;
 
   //executes the query and passes the results to the callback function.
   connection.query(query, function (error, results) {
@@ -137,13 +123,12 @@ function viewEmployeesByDepartment() {
   //confirmation function is being executed
   console.log("You are viewing Employees grouped by Department\n");
   //creates a query string that is used to select all the relevant information about the employees and their departments from the database.
-  var query = `SELECT d.id, d.name, r.salary AS Budget
-    FROM employee e
-    LEFT JOIN role r
-    ON e.role_id=r.id
-    LEFT JOIN department d
-    N d.id=r.department_id
-    GROUP BY d.id, d.name`;
+  var query =  
+  `SELECT department.id, department.department_name, role.salary
+  FROM employee
+  LEFT JOIN role ON employee.role_id = role.id
+  LEFT JOIN department ON department.id = role.department_id
+  GROUP BY department.id, department.department_name, role.salary`;
 
   //executes the query and passes the results to the callback function.
   connection.query(query, function (error, results) {
@@ -174,20 +159,20 @@ function departmentPrompts(departments) {
     .then(function (answer) {
       // console indicating which department the user chose.
       console.log("You chose " + answer.department);
-      var query = `SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department 
-          FROM employee e
-          JOIN role r
-          ON e.role_id = r.id
-          JOIN department d
-          ON d.id = r.department_id
-          WHERE d.id = ?`;
+      var query = `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.department_name AS department 
+          FROM employee
+          JOIN role
+          ON employee.role_id = role.id
+          JOIN department
+          ON department.id = role.department_id
+          WHERE department.id = ?`;
 
-          connection.query(query, answer.department, function (error, res) {
-        if (error) throw err;
+      connection.query(query, answer.department, function (error, results) {
+        if (error) throw error;
 
-        console.table("View Response ", res);
+        console.table("View Response ", results);
         console.log(
-          res.affectedRows + "You viewed employees grouped by departments!\n"
+          results.affectedRows + "You viewed employees grouped by departments!\n"
         );
 
         admin();
@@ -196,10 +181,10 @@ function departmentPrompts(departments) {
 }
 
 function addEmployee() {
-  console.log("Please follow the prompts to insert employee information.");
-  var query = `SELECT r.id, r.title, r.salary
-    FROM role r`;
-    connection.query(query, function (error, results) {
+  console.log("Please follow the prompts to insert information.\n");
+  var query = `SELECT role.id, role.title, role.salary
+    FROM role`;
+  connection.query(query, function (error, results) {
     if (error) throw error;
     const Roles = results.map(({ id, title, salary }) => ({
       value: id,
@@ -207,7 +192,7 @@ function addEmployee() {
       salary: `${salary}`,
     }));
     console.table(results);
-    console.log("Please follow the prompts to insert roles.");
+    console.log("Please follow the prompts to insert information.");
     insertRolesPrompt(Roles);
   });
 }
@@ -243,7 +228,7 @@ function insertRolesPrompt(Roles) {
           first_name: answer.first_name,
           last_name: answer.last_name,
           role_id: answer.role,
-          manager_id: answer.manager_Id,
+          manager_id: answer.manager_id,
         },
         function (error, results) {
           if (error) throw error;
@@ -263,10 +248,10 @@ function insertRolesPrompt(Roles) {
 function deleteEmployees() {
   console.log("You are now viewing information to delete an employee.");
 
-  var query = `SELECT e.id, e.first_name, e.last_name
-        FROM employee e`;
+  var query = `SELECT employee.id, employee.first_name, employee.last_name
+        FROM employee`;
 
-        connection.query(query, function (error, results) {
+  connection.query(query, function (error, results) {
     if (error) throw error;
     //creating employees array to selecct and delete an employee
     const employeesList = results.map(({ id, first_name, last_name }) => ({
@@ -314,14 +299,13 @@ function updateEmployeeRole() {
 
 function employeesList() {
   console.log("You are now viewing to UPDATE an employee's role");
-  var query = `SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department, r.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager
-  FROM employee e
-  JOIN role r
-	ON e.role_id = r.id
-  JOIN department d
-  ON d.id = r.department_id
-  JOIN employee m
-	ON m.id = e.manager_id`;
+  var query = `
+  
+  SELECT e.id, e.first_name, e.last_name, r.title, d.department_name AS department, r.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager_name
+  FROM employee AS e
+  JOIN role AS r ON e.role_id = r.id
+  JOIN department AS d ON r.department_id = d.id
+  LEFT JOIN employee AS manager ON e.manager_id = manager.id;`;
   connection.query(query, function (error, results) {
     if (error) throw error;
 
@@ -341,8 +325,8 @@ function rolesArray(chooseEmployee) {
   console.log("You are now viewing employees to Update a role");
   let chooseRole;
 
-  var query = `SELECT r.id, r.title, r.salary 
-        FROM role r`;
+  var query = `SELECT role.id, role.title, role.salary 
+        FROM role`;
 
   connection.query(query, function (error, results) {
     if (error) throw error;
@@ -395,15 +379,15 @@ function employeeRolesPrompt(chooseEmployee, chooseRole) {
 }
 
 function addEmployeeRole() {
-  var query = `SELECT d.id, d.name, r.salary AS budget
-          FROM employee e
-          JOIN role r
-          ON e.role_id = r.id
-          JOIN department d
-          ON d.id = r.department_id
-          GROUP BY d.id, d.name`;
+  var query = `SELECT department.id, department.name, role.salary AS budget
+          FROM employee 
+          JOIN role
+          ON employee.role_id = role.id
+          JOIN department
+          ON department.id = role.department_id
+          GROUP BY department.id, department.name`;
 
-          connection.query(query, function (error, results) {
+  connection.query(query, function (error, results) {
     if (error) throw error;
 
     // (callbackfn: (value: T, index: number, array: readonly T[]) => U, thisArg?: any)
@@ -484,34 +468,35 @@ function viewEmployeesCount() {
 }
 
 // Function to fetch and display the total budget of each department
-async function viewDepartmentBudgets() {
-  try {
-    // SQL query to view the budget by department
-    const query = `
-      SELECT department.name AS department_name, SUM(role.salary) AS total_budget
-      FROM department
-      JOIN role ON department.id = role.department_id
-      JOIN employee ON role.id = employee.role_id
-      GROUP BY department.name;
-    `;
+function viewDepartmentBudgets() {
 
-    console.log('\nFetching Department Budgets...\n');
+  // SQL query to view the budget by department
+  const query = `
+    SELECT department.department_name AS department_name, SUM(role.salary) AS Total_budget
+    FROM department
+    JOIN role ON department.id = role.department_id
+    JOIN employee ON role.id = employee.role_id
+    GROUP BY department_name; 
+  `;
+  
+  connection.query(query, (error, sumResults) => {
+    if (error) {
+      console.log("Error viewing departments budget:", error);
+      return;
+    }
 
-    // Executing the query
-    const [budgetRows] = await connection.execute(query);
+    console.log("\nFetching Department Budgets...\n");
 
     // Display the budget by department using console.table
-    const data = budgetRows.map((row) => ({
-      'Department Name': row.department_name,
-      'Total Budget': row.total_budget,
+    const data = sumResults.map((row) => ({
+      "Department Name": row.department_name,
+      "Total Budget": row.Total_budget, // Use the correct property name here
     }));
 
-    console.table(data);
-  } catch (error) {
-    console.error("Error viewing departments budget:", error); // Log the error message
-  } finally {
-    admin();
-  }
+    console.table(data); // display the data
+  });
+  admin();
 }
+
 
 admin();
