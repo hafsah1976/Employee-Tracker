@@ -56,7 +56,7 @@ function admin() {
           break;
         case "View Employees By Manager":
           //  view employees grouped by manager
-          viewEmployeesByManager();
+          viewEmployees();
           break;
         case "Add Employee":
           // add an employee
@@ -98,7 +98,7 @@ function admin() {
 
 //this function is used to view all the employees under a particular manager.
 
-function viewEmployeesByManager() {
+function viewEmployees() {
   console.log("You are viewing Employees By Manager\n");
 
   //creates a query string that is used to select all the relevant information about the employees and their managers from the database.
@@ -213,70 +213,77 @@ function addDepartment() {
   });
 };
 
-
 function addEmployee() {
-  console.log("Please follow the prompts to insert information.\n");
-  var query = `SELECT role.id, role.title, role.salary
-    FROM role`;
+
+  var query = `SELECT * FROM employee`;
+
   connection.query(query, function (error, results) {
     if (error) throw error;
-    const Roles = results.map((data ) => ({
-      value: data.id,
-      title: data.title,
-      salary: data.salary,
+    
+    const employeesList = results.map((employee) => ({
+      name: employee.first_name.concat(" ", employee.last_name),
+      value: employee.id,
     }));
-    console.table(results);
-    console.log("Please follow the prompts to insert information.");
-    insertRolesPrompt(Roles);
-  });
-}
 
-function insertRolesPrompt(Roles) {
-  inquirer
-    .prompt([
-      {
-        type: "input",
-        name: "first_name",
-        message: "Please enter employee's first name: ",
-      },
-      {
-        type: "input",
-        name: "last_name",
-        message: "Please enter employee's last name: ",
-      },
-      {
-        type: "list",
-        name: "role",
-        message: "Please enter employee's role: ",
-        choices: Roles,
-      },
-    ])
-    .then(function (answer) {
-      console.log(answer);
-
-      var query = `INSERT INTO employee SET ?`;
-      // when done entering employee information, insert something new into the database with that information
-      connection.query(
-        query,
-        {
-          first_name: answer.first_name,
-          last_name: answer.last_name,
-          role_id: answer.role,
-          manager_id: answer.manager_id,
-        },
-        function (error, results) {
-          if (error) throw error;
-
-          console.log(
-            results.affectedRows +
-              "You have successfully inserted new information!\n"
-          );
-          console.table(results);
-
-          admin();
-        }
+    var query = `SELECT * FROM role`;
+    connection.query(query, (error, results) => {
+      Roles = results.map((role) => ({
+        name: role.title,
+        value: role.id,
+      }));
+      console.table(results);
+      console.log(
+        "\n Please follow the prompts to insert employee information."
       );
+      return inquirer
+        .prompt([
+          {
+            type: "input",
+            name: "first_name",
+            message: "Please enter employee's first name: ",
+          },
+          {
+            type: "input",
+            name: "last_name",
+            message: "Please enter employee's last name: ",
+          },
+          {
+            type: "list",
+            name: "role",
+            message: "Please enter employee's role: ",
+            choices: Roles,
+          },
+          {
+            type: "list",
+            name: "managerID",
+            message: "Please enter the new employee's manager:",
+            choices: employeesList,
+          },
+        ])
+        .then((answers) => {
+          const query = `INSERT INTO employee SET 
+          first_name='${answers.first_name}', 
+          last_name= '${answers.last_name}', 
+          role_id= ${answers.role}, 
+          manager_id=${answers.managerID};`;
+
+          connection.query(query, (error, results) => {
+            if (error) {
+              console.log("Failed to Insert Information.", error);
+              return;
+            }
+            console.log(
+              "You have successfully inserted " +
+                answers.first_name +
+                " " +
+                answers.last_name +
+                "'s information to the database"
+            );
+            admin();
+          });
+        });
     });
+  });
 }
 
 function deleteEmployees() {
@@ -377,6 +384,21 @@ function rolesArray(chooseEmployee) {
   });
 }
 
+//viewing roles in a joint table , role id from role and department id from department
+function viewRoles() {
+  const query = `SELECT role.id, role.title AS role, role.salary, department.department_name AS department 
+  FROM role 
+  INNER JOIN department ON (department.id = role.department_id);`;
+  connection.query(query, (error, results) => {
+      if (err) {
+          console.log(error);
+          return;
+      }
+      console.table(results);
+      admin();
+  });
+};
+
 function employeeRolesPrompt(chooseEmployee, chooseRole) {
   inquirer
     .prompt([
@@ -411,7 +433,6 @@ function employeeRolesPrompt(chooseEmployee, chooseRole) {
       );
     });
 }
-
 
 function addEmployeeRole() {
   var query = `SELECT * FROM department`;
