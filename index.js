@@ -33,6 +33,7 @@ function admin() {
         message: "What would you like to do?",
         choices: [
           "View Employees By Department",
+          "Add a Department",
           "View Employees By Manager",
           "Add Employee",
           "Delete Employee",
@@ -49,6 +50,9 @@ function admin() {
         case "View Employees By Department":
           //  viewing all employees grouped by department
           viewEmployeesByDepartment();
+          break;
+        case "Add a Department":
+          addDepartment() ;
           break;
         case "View Employees By Manager":
           //  view employees grouped by manager
@@ -124,41 +128,50 @@ function viewEmployeesByDepartment() {
   console.log("You are viewing Employees grouped by Department\n");
   //creates a query string that is used to select all the relevant information about the employees and their departments from the database.
   var query =  
-  `SELECT department.id, department.department_name, role.salary
-  FROM employee
-  LEFT JOIN role ON employee.role_id = role.id
-  LEFT JOIN department ON department.id = role.department_id
-  GROUP BY department.id, department.department_name, role.salary`;
+  `SELECT department.id, department.department_name
+  FROM department
+  GROUP BY department.id, department.department_name`;
 
   //executes the query and passes the results to the callback function.
   connection.query(query, function (error, results) {
     //checks if there was an error executing the query.
     if (error) throw error;
     // creates an array of objects, each representing a department, that the user can choose from.
-    const departments = results.map((data) => ({
-      value: data.id,
-      name: data.name,
+    const departmentNames = results.map((data) => ({
+      value: data.id, 
+      name: data.department_name,
     }));
     console.log("You just viewed Employees by department.\n");
     console.table(results);
     // calls the department Prompts function, which prompts the user to choose a department
-    departmentPrompts(departments);
+    departmentPrompts(departmentNames);
   });
 }
-function departmentPrompts(departments) {
-  // prompts the user to choose a department
+function departmentPrompts(departmentNames) {
+  // Extract department names from the departments array
+  // const departmentNames = departments.map((departments) => departments.department_name);
+
   inquirer
     .prompt([
       {
         type: "list",
-        name: "department",
+        name: "departments",
         message: "Please select a Department:",
-        choices: departments,
+        choices: departmentNames, // Use department names as choices
       },
     ])
     .then(function (answer) {
-      // console indicating which department the user chose.
-      console.log("You chose " + answer.department);
+      // Find the department ID based on the selected department name
+      const selectedDepartment = departmentNames.find(
+        (department) => department.department_name === answer.departments
+      );
+
+      if (!selectedDepartment) {
+        console.log("Invalid department selection.");
+        return admin();
+      }
+
+      console.log("You chose " + answer.departments);
       var query = `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.department_name AS department 
           FROM employee
           JOIN role
@@ -167,18 +180,39 @@ function departmentPrompts(departments) {
           ON department.id = role.department_id
           WHERE department.id = ?`;
 
-      connection.query(query, answer.department, function (error, results) {
+      connection.query(query, selectedDepartment.id, function (error, results) {
         if (error) throw error;
 
-        console.table("View Response ", results);
-        console.log(
-          results.affectedRows + "You viewed employees grouped by departments!\n"
-        );
+        console.table(results);
+        console.log("You viewed employees grouped by departments!\n");
 
         admin();
       });
     });
 }
+
+
+// Adding a department
+function addDepartment() {
+  inquirer.prompt([
+      {
+          type: 'input',
+          name: 'department',
+          message: 'Please enter the name of department you want to add:',
+      }
+  ]).then((answer) => {
+      var query = `INSERT INTO department(department_name) VALUES('${answer.department}');`
+      connection.query(query, (error, results) => {
+          if (error) {
+              console.log(error);
+              return;
+          }
+          console.log("Added " + answer.department + " to the department table")
+          admin();
+      });
+  });
+};
+
 
 function addEmployee() {
   console.log("Please follow the prompts to insert information.\n");
@@ -186,10 +220,10 @@ function addEmployee() {
     FROM role`;
   connection.query(query, function (error, results) {
     if (error) throw error;
-    const Roles = results.map(({ id, title, salary }) => ({
-      value: id,
-      title: `${title}`,
-      salary: `${salary}`,
+    const Roles = results.map((data ) => ({
+      value: data.id,
+      title: data.title,
+      salary: data.salary,
     }));
     console.table(results);
     console.log("Please follow the prompts to insert information.");
@@ -234,7 +268,7 @@ function insertRolesPrompt(Roles) {
           if (error) throw error;
 
           console.log(
-            results.insertedRows +
+            results.affectedRows +
               "You have successfully inserted new information!\n"
           );
           console.table(results);
@@ -378,74 +412,95 @@ function employeeRolesPrompt(chooseEmployee, chooseRole) {
     });
 }
 
-function addEmployeeRole() {
-  var query = `SELECT department.id, department.name, role.salary AS budget
-          FROM employee 
-          JOIN role
-          ON employee.role_id = role.id
-          JOIN department
-          ON department.id = role.department_id
-          GROUP BY department.id, department.name`;
 
+function addEmployeeRole() {
+  var query = `SELECT * FROM department`;
+  
   connection.query(query, function (error, results) {
     if (error) throw error;
-
-    // (callbackfn: (value: T, index: number, array: readonly T[]) => U, thisArg?: any)
-    const _Departments = res.map(({ id, name }) => ({
-      value: id,
-      name: `${id} ${name}`,
+    _Departments = results.map(department => ({
+      name: department.department_name,
+      value: department.id
     }));
-
     console.table(results);
     console.log("Please follow the prompts to insert a Role!");
+    return inquirer
+      .prompt([
+        {
+          type: "input",
+          name: "roleTitle",
+          message: "Please enter the role title you want to add:",
+        },
+        {
+          type: "input",
+          name: "roleSalary",
+          message: "Please assign a salary to the role you have entered above:",
+        },
+        {
+          type: "list",
+          name: "department_ID",
+          message: "Please choose a Department you want to add this role to:",
+          choices: _Departments
+        }
+      ])
+      .then((answers) => {
+        const query = `INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?);`;
+        const values = [answers.roleTitle, answers.roleSalary, answers.department_ID];
 
-    addEmployeeRolePrompts(_Departments);
+        connection.query(query, values, (error, results) => {
+          if (error) {
+            console.log(error);
+            return;
+          }
+          console.log("Added " + answers.roleTitle + " to the Roles table.");
+          admin();
+        });
+      });
   });
 }
+// function addEmployeeRolePrompts(_Departments) {
+//   inquirer
+//     .prompt([
+//       {
+//         type: "input",
+//         name: "roleTitle",
+//         message: "Please enter the role title you want to add:",
+//       },
+//       {
+//         type: "input",
+//         name: "roleSalary",
+//         message: "Please assign a salary to the role you have entered above:",
+//       },
+//       {
+//         type: "list",
+//         name: "department_ID",
+//         message: "Please choose a Department you want to add this role to:",
+//         choices: _Departments,
+//       },
+//     ])
+//     .then(function (answer) {
+//       var query = `INSERT INTO role SET ?`;
 
-function addEmployeeRolePrompts(_Departments) {
-  inquirer
-    .prompt([
-      {
-        type: "input",
-        name: "roleTitle",
-        message: "Please enter the role title you want to add:",
-      },
-      {
-        type: "input",
-        name: "roleSalary",
-        message: "Please assign a salary to the role you have entered above:",
-      },
-      {
-        type: "list",
-        name: "department_ID",
-        message: "Please choose a Department you want to add this role to:",
-        choices: _Departments,
-      },
-    ])
-    .then(function (answer) {
-      var query = `INSERT INTO role SET ?`;
+//       connection.query(
+//         query,
+//         {
+//           title: answer.title,
+//           salary: answer.salary,
+//           department_id: answer.department_ID,
+//         },
+//         function (error, results) {
+//           if (error) throw error;
 
-      connection.query(
-        query,
-        {
-          title: answer.title,
-          salary: answer.salary,
-          department_id: answer.department_ID,
-        },
-        function (error, results) {
-          if (error) throw error;
-
-          console.table(results);
-          console.log(
-            "You have successfully inserted a new employee Role in your database!"
-          );
-          // call admin function again to view the tasks list for the user
-          admin();
-        }
-      );
-    });
-}
+//           console.table(results);
+//           console.log(
+//             "You have successfully inserted a new employee Role in your database!"
+//           );
+//           // call admin function again to view the tasks list for the user
+//           admin();
+//         }
+//       );
+//     });
+// }
 
 // Function to fetch and display the employee count
 function viewEmployeesCount() {
