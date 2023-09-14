@@ -9,6 +9,7 @@ USE employees_db;
 CREATE TABLE department (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     department_name VARCHAR(30) NOT NULL
+ 
 );
 
 -- Create role table --
@@ -33,4 +34,6 @@ CREATE TABLE employee (
     REFERENCES role(id),
     FOREIGN KEY (manager_id) 
     REFERENCES employee(id)
+    ON DELETE CASCADE
+
 );

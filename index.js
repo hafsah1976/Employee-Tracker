@@ -51,8 +51,15 @@ function admin() {
           //  view employees grouped by manager
           viewEmployees();
           break;
+        case "Add a Department\n":
+          addDepartment();
+          break;
         case "Add Employee\n":
           addEmployee();
+          break;
+        case "Add Employee Role\n":
+        //  add a new role for potential employees
+          addEmployeeRole();
           break;
         case "Update Employee Role\n":
           // update an existing employee's role
@@ -60,13 +67,6 @@ function admin() {
           break;
         case "View All Roles\n":
           viewRoles();
-          break;
-        case "Add Employee Role\n":
-         //  add a new role for potential employees
-          addEmployeeRole();
-          break;
-        case "Add a Department\n":
-          addDepartment();
           break;
         case "View Employees By Department\n":
          //  viewing all employees grouped by department
@@ -77,7 +77,7 @@ function admin() {
           viewDepartmentBudgets();
           break;
         case "Delete a record\n":
-        //  delete a record
+        //  delete a record prompts
         inquirer
         .prompt([
           {
@@ -138,12 +138,22 @@ function viewEmployees() {
   console.log("\n-: You are viewing Employees Grouped By Manager :-\n");
 
   //creates a query string that is used to select all the relevant information about the employees and their managers from the database.
-  var query = `SELECT e.id, e.first_name, e.last_name, r.title, d.department_name AS department, r.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager_name
-  FROM employee AS e
-  LEFT JOIN role AS r ON e.role_id = r.id
-  LEFT JOIN department AS d ON r.department_id = d.id
-  LEFT JOIN employee AS manager ON e.manager_id = manager.id
-  `;
+  var query = ` 
+SELECT employee.id, employee.first_name, employee.last_name, role.title AS role, department.department_name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager_name
+FROM employee 
+LEFT JOIN employee manager on manager.id = employee.manager_id 
+INNER JOIN role 
+ON (role.id = employee.role_id) 
+INNER JOIN department 
+ON (department.id = role.department_id) 
+ORDER BY employee.id;`;
+
+  // `SELECT e.id, e.first_name, e.last_name, r.title, d.department_name AS department, r.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager_name
+  // FROM employee AS e
+  // LEFT JOIN role AS r ON e.role_id = r.id
+  // LEFT JOIN department AS d ON r.department_id = d.id
+  // LEFT JOIN employee AS manager ON e.manager_id = manager.id
+  // `;
 
   //executes the query and passes the results to the callback function.
   connection.query(query, function (error, results) {
@@ -161,7 +171,8 @@ function viewEmployees() {
 function viewRoles() {
   const query = `SELECT role.id, role.title AS role, role.salary, department.department_name AS department 
   FROM role 
-  INNER JOIN department ON (department.id = role.department_id);`;
+  INNER JOIN department ON (department.id = role.department_id)
+  ORDER BY role.id;`;
   connection.query(query, (error, results) => {
     if (error) {
       console.log(error);
@@ -177,7 +188,8 @@ function viewRoles() {
 function viewEmployeesByDepartment() {
   var query = `SELECT department.id, department.department_name
   FROM department
-  GROUP BY department.id, department.department_name`;
+  GROUP BY department.id, department.department_name
+  ORDER BY department.id;`;
   //executes the query and passes the results to the callback function.
   connection.query(query, function (error, results) {
         //checks if there was an error executing the query.
@@ -278,130 +290,119 @@ function addDepartment() {
       });
     }
   
-function addEmployee() {
-  // Fetch existing employees to populate the manager selection list
-  var query = `SELECT * FROM employee`;
-var viewManagerQuery =
-`SELECT
-m.id AS manager_id,
-m.first_name AS manager_first_name,
-m.last_name AS manager_last_name,
-d.department_name AS department_managed
-FROM
-employee AS m
-JOIN
-employee AS e ON m.id = e.manager_id
-JOIN
-role AS r ON e.role_id = r.id
-JOIN
-department AS d ON r.department_id = d.id
-GROUP BY
-m.id, m.first_name, m.last_name, d.department_name`;
-
-  connection.query(viewManagerQuery, function (error, managersResults) {
-    if (error) throw error;
-
-    // Create a list of existing employees for manager selection
-    // const employeesList = results.map((employee) => ({
-    //   name: employee.first_name.concat(" ", employee.last_name),
-    //   value: employee.id,
-    // }));
-
-      // Map managers to choices for manager selection
-      const managersList = managersResults.map((manager) => ({
-        name: manager.manager_name,
-        value: manager.manager_id,
-      }));
-
-    // Fetch existing roles for role selection
-    var query = `SELECT * FROM role`;
-    connection.query(query, (error, results) => {
-      if (error) {
-        console.log("\nFailed to fetch roles:", error);
-        // You can add a retry or return to the main menu option here
-        return admin();
-      }
-
-      // Map roles to choices for role selection
-      Roles = results.map((role) => ({
-        name: role.title,
-        value: role.id,
-      }));
-      console.table(results);
-      console.log("\n Please follow the prompts to insert employee information.\n");
-      return inquirer
-        .prompt([
-          // Prompt user for employee information
-          {
-            type: "input",
-            name: "first_name",
-            message: "\nPlease enter employee's first name: ",
-            validate: function (input) {
-              if (input.trim() === "") {
-                return "First name cannot be empty.";
+    function addEmployee() {
+      // Fetch existing employees to populate the manager selection list
+      var query = `SELECT * FROM employee`;
+      var viewManagerQuery = 
+    
+      `SELECT e.id, r.title, d.department_name AS department, r.salary, CONCAT(e.first_name, ' ', e.last_name) AS manager_name
+      FROM employee AS e
+      LEFT JOIN role AS r ON e.role_id = r.id
+      LEFT JOIN department AS d ON r.department_id = d.id
+      LEFT JOIN
+      employee AS manager ON e.manager_id = manager.id
+      WHERE e.id IN (SELECT DISTINCT manager_id FROM employee WHERE manager_id IS NOT NULL)
+      AND e.manager_id IS NULL;`;
+          
+      connection.query(viewManagerQuery, function (error, managersResults) {
+        if (error) throw error;
+    
+        // Create a list of existing employees for manager selection because we are working under the assumption that the six departments each have a manager
+        const employeesList = managersResults.map((manager) => ({
+          name: manager.manager_name,
+          value: manager.manager_id,
+        }));
+        console.table(managersResults);
+      
+        // Fetch existing roles for role selection
+        var query = `SELECT * FROM role`;
+        connection.query(query, (error, rolesResults) => {
+          if (error) {
+            console.log("\nFailed to fetch roles:", error);
+            //  return to the main menu option here
+            return admin();
+          }
+    
+          // Map roles to choices for role selection
+          const rolesList = rolesResults.map((role) => ({
+            name: role.title,
+            value: role.id,
+          }));
+    
+          console.table(rolesResults);
+          console.log("\nPlease follow the prompts to insert employee information.\n");
+          return inquirer
+            .prompt([
+              // Prompt user for employee information
+              {
+                type: "input",
+                name: "first_name",
+                message: "\nPlease enter employee's first name: ",
+                validate: function (input) {
+                  if (input.trim() === "") {
+                    return "First name cannot be empty.";
+                  }
+                  return true;
+                },
+              },
+              {
+                type: "input",
+                name: "last_name",
+                message: "\nPlease enter employee's last name: ",
+                validate: function (input) {
+                  if (input.trim() === "") {
+                    return "\nLast name cannot be empty.";
+                  }
+                  return true;
+                },
+              },
+              {
+                type: "list",
+                name: "role",
+                message: "\nPlease enter employee's role: ",
+                choices: rolesList,
+              },
+              {
+                type: "list",
+                name: "managerID",
+                message: "\nPlease select a manager to this employee or Go back to Main:",
+                choices: employeesList.concat([{ name: "Go back to Main", value: "main" }]),
+              },
+            ])
+            .then((answers) => {
+              if (answers.managerID === "main") {
+                admin();
+              } else (answers.managerID)
+                // Insert the employee record with the selected role and existing manager
+                const employeeQuery = `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)`;
+                const employeeValues = [
+                  answers.first_name.trim(),
+                  answers.last_name.trim(),
+                  answers.role,
+                  answers.manager_id,
+                ];
+    
+                connection.query(employeeQuery, employeeValues, (employeeError, employeeResults) => {
+                  if (employeeError) {
+                    console.log("\nFailed to Insert Employee Information.", employeeError);
+                    return admin();
+                  }
+                  console.table(employeeResults);
+                  console.log(
+                    "\nYou have successfully inserted " +
+                      answers.first_name +
+                      " " +
+                      answers.last_name +
+                      "'s information to the database." + "\n");
+    
+                  admin();
+                });
               }
-              return true;
-            },
-          },
-          {
-            type: "input",
-            name: "last_name",
-            message: "\nPlease enter employee's last name: ",
-            validate: function (input) {
-              if (input.trim() === "") {
-                return "\nLast name cannot be empty.";
-              }
-              return true;
-            },
-          },
-          {
-            type: "list",
-            name: "role",
-            message: "\nPlease enter employee's role: ",
-            choices: Roles,
-          },
-          {
-            type: "list",
-            name: "managerID",
-            message: "\nPlease select assign a manager to this employee:",
-            choices: managersList
-          },
-        ])
-        .then((answers) => {
-          // Insert employee information into the database
-          const query = `INSERT INTO employee SET 
-          first_name=?, 
-          last_name=?, 
-          role_id=?, 
-          manager_id=?`;
-
-          const values = [
-            answers.first_name.trim(), // Removing leading/trailing spaces
-            answers.last_name.trim(),  
-            answers.role,
-            answers.managerID,
-          ];
-
-          connection.query(query, values, (error, results) => {
-            if (error) {
-              console.log("\nFailed to Insert Information.", error);
-              // getting the user to start over
-              return admin();
-            }
-            console.log(
-              "\n You have successfully inserted " +
-                answers.first_name +
-                " " +
-                answers.last_name +
-                "'s information to the database\n"
             );
-            admin();
-          });
         });
-    });
-  });
-}
-
+      });
+    }
+    
 //delete an employee
 function deleteEmployee() {
 
