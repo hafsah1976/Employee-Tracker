@@ -12,7 +12,7 @@
 
 The CLI application is a user-friendly interface created for small business owners to manage the employee information in a database. It will enable users to perform various tasks related to employees, roles, and departments, such as viewing, adding, updating, or deleting records. The purpose is to make it easier to efficiently organize and maintain employee data. Through this project, I have learned valuable skills in building a command-line interface (CLI) application and working with SQL databases. I learned to write a few SQL queries to interact with the employees database, practiced handling user input using inquirer, and displaying results in a user-friendly format.
 
-[Walkthrough of CLI application]()
+[Walkthrough of CLI application](https://watch.screencastify.com/v/JouKMIA1CP5jkP9C5Oyh)
 
 ## Installation
 
