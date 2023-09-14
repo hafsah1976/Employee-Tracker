@@ -39,7 +39,7 @@ function admin() {
           "Add a Department\n",
           "View Employees By Department\n",
           "View Department Budgets\n",   
-          "Delete An Employee\n",
+          "Delete a record\n",
           "View Employee Count\n",
           "Exit\n",
         ],
@@ -76,10 +76,43 @@ function admin() {
         //  View the total utilized budget of a department—in other words, the combined salaries of all employees in that department.
           viewDepartmentBudgets();
           break;
-        case "Delete An Employee\n":
-        //  delete an employee
-          deleteEmployee();
-          break;
+        case "Delete a record\n":
+        //  delete a record
+        inquirer
+        .prompt([
+          {
+            type: "list",
+            name: "deleteChoice",
+            message: "What would you like to Delete?\n",
+            choices: [
+              "Delete an employee",
+              "Delete a role",
+              "Delete a department",
+              "Go back to Main",
+            ],
+            },
+        ])
+        .then((answers) => {
+            switch(answers.deleteChoice) {
+              case "Delete an employee":
+                deleteEmployee();
+                break; 
+              case "Delete a role":
+                deleteRole();
+                break;
+              case "Delete a department":
+                deleteDepartment();
+                break;
+              case "Go back to Main":
+                admin();
+                break;
+              default:
+                console.log("Select an option to delete.");
+                admin();
+                break;
+              }
+            });
+        break;
         case "View Employee Count\n":
           //  view the exisiting number of employees
           viewEmployeesCount();
@@ -118,7 +151,7 @@ function viewEmployees() {
     if (error) throw error;
     //logs the results of the query to the console in a table format.
     console.table(results);
-    console.log("\nYou just viewed all Employees.\n");
+    console.log("\nYou just viewed all Employees and their Managers.\n");
     // calls the admin function, which returns the user to the main menu.
     admin();
   });
@@ -248,15 +281,37 @@ function addDepartment() {
 function addEmployee() {
   // Fetch existing employees to populate the manager selection list
   var query = `SELECT * FROM employee`;
+var viewManagerQuery =
+`SELECT
+m.id AS manager_id,
+m.first_name AS manager_first_name,
+m.last_name AS manager_last_name,
+d.department_name AS department_managed
+FROM
+employee AS m
+JOIN
+employee AS e ON m.id = e.manager_id
+JOIN
+role AS r ON e.role_id = r.id
+JOIN
+department AS d ON r.department_id = d.id
+GROUP BY
+m.id, m.first_name, m.last_name, d.department_name`;
 
-  connection.query(query, function (error, results) {
+  connection.query(viewManagerQuery, function (error, managersResults) {
     if (error) throw error;
 
     // Create a list of existing employees for manager selection
-    const employeesList = results.map((employee) => ({
-      name: employee.first_name.concat(" ", employee.last_name),
-      value: employee.id,
-    }));
+    // const employeesList = results.map((employee) => ({
+    //   name: employee.first_name.concat(" ", employee.last_name),
+    //   value: employee.id,
+    // }));
+
+      // Map managers to choices for manager selection
+      const managersList = managersResults.map((manager) => ({
+        name: manager.manager_name,
+        value: manager.manager_id,
+      }));
 
     // Fetch existing roles for role selection
     var query = `SELECT * FROM role`;
@@ -280,7 +335,7 @@ function addEmployee() {
           {
             type: "input",
             name: "first_name",
-            message: "Please enter employee's first name: ",
+            message: "\nPlease enter employee's first name: ",
             validate: function (input) {
               if (input.trim() === "") {
                 return "First name cannot be empty.";
@@ -291,10 +346,10 @@ function addEmployee() {
           {
             type: "input",
             name: "last_name",
-            message: "Please enter employee's last name: ",
+            message: "\nPlease enter employee's last name: ",
             validate: function (input) {
               if (input.trim() === "") {
-                return "Last name cannot be empty.";
+                return "\nLast name cannot be empty.";
               }
               return true;
             },
@@ -302,14 +357,14 @@ function addEmployee() {
           {
             type: "list",
             name: "role",
-            message: "Please enter employee's role: ",
+            message: "\nPlease enter employee's role: ",
             choices: Roles,
           },
           {
             type: "list",
             name: "managerID",
-            message: "Please enter the new employee's manager:",
-            choices: employeesList,
+            message: "\nPlease select assign a manager to this employee:",
+            choices: managersList
           },
         ])
         .then((answers) => {
@@ -385,11 +440,122 @@ function deleteEmployee() {
         connection.query(query, { id: answer.emp_ID }, function (error, results) {
           if (error) throw error;
 
-          console.log(
-            results.affectedRows + "\nYou have successfully removed " + employeesList.name + "\n"
-          );
+          console.log("\nYou have successfully removed " + answer.emp_ID + "\n" );
           console.table(results);
 
+          admin();
+        });
+      });
+  });
+}
+
+
+// Function to delete a department
+function deleteDepartment() {
+  // Fetch existing departments for deletion
+  var query = `SELECT * FROM department`;
+
+  connection.query(query, function (error, results) {
+    if (error) {
+      console.log('Error fetching department data:', error);
+      return admin();
+    }
+
+    // Create a list of existing departments for deletion
+    const departmentList = results.map((department) => ({
+      name: department.department_name,
+      value: department.id,
+    }));
+
+    inquirer
+      .prompt([
+        {
+          type: 'list',
+          name: 'departmentToDelete',
+          message: 'Please select a department to delete:',
+          choices: departmentList,
+        },
+        {
+          type: 'confirm',
+          name: 'confirmDelete',
+          message: 'Are you sure you want to delete this department?',
+        },
+      ])
+      .then(function (answers) {
+        if (!answers.confirmDelete) {
+          console.log('Department deletion cancelled.\n');
+          return admin();
+        }
+
+        // Delete the selected department
+        var deleteQuery = `DELETE FROM department WHERE id = ?`;
+
+        connection.query(deleteQuery, [answers.departmentToDelete], function (
+          error,
+          results
+        ) {
+          if (error) {
+            console.log('Failed to delete department:', error);
+            return admin();
+          }
+          console.table(results);
+          console.log('Department deleted successfully.\n');
+          admin();
+        });
+      });
+  });
+}
+
+// Function to delete a role
+function deleteRole() {
+  // Fetch existing roles for deletion
+  var query = `SELECT * FROM role`;
+
+  connection.query(query, function (error, results) {
+    if (error) {
+      console.log('Error fetching role data:', error);
+      return admin();
+    }
+
+    // Create a list of existing roles for deletion
+    const roleList = results.map((role) => ({
+      name: role.title,
+      value: role.id,
+    }));
+
+    inquirer
+      .prompt([
+        {
+          type: 'list',
+          name: 'roleToDelete',
+          message: 'Please select a role to delete:',
+          choices: roleList,
+        },
+        {
+          type: 'confirm',
+          name: 'confirmDelete',
+          message: 'Are you sure you want to delete this role?',
+        },
+      ])
+      .then(function (answers) {
+        if (!answers.confirmDelete) {
+          console.log('You have cancelled Role deletion .\n');
+          return admin();
+        }
+
+        // Delete the selected role
+        var deleteQuery = `DELETE FROM role WHERE id = ?`;
+
+        connection.query(deleteQuery, [answers.roleToDelete], function (
+          error,
+          results
+        ) {
+          if (error) {
+            console.log('Failed to delete role:', error);
+            return admin();
+          }
+
+          console.log('Role deleted successfully.\n');
           admin();
         });
       });
